@@ -53,7 +53,6 @@ pub struct Ping {
 
 #[derive(Protocol, Clone, Debug, PartialEq)]
 #[protocol(discriminant = "integer")]
-#[protocol(discriminator(u8))]
 pub enum Packet {
     #[protocol(discriminator(0))]
     Ping(Ping),

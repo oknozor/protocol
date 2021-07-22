@@ -2,8 +2,65 @@ use crate::format::{self, Format};
 
 use proc_macro2::{Span, TokenStream};
 use syn;
-use syn::{ExprPath, ExprBinary, ExprUnary, Expr};
+use syn::{ExprPath, ExprBinary, ExprUnary, Expr, MetaList, NestedMeta, MetaNameValue};
 use quote::ToTokens;
+
+const REPR: &'static str = "repr";
+const SKIP_IF: &'static str = "skip_if";
+const FIXED_LENGTH: &'static str = "fixed_length";
+const LENGTH_PREFIX: &'static str = "length_prefix";
+const DISCRIMINATOR: &'static str = "discriminator";
+const DISCRIMINANT: &'static str = "discriminant";
+
+#[derive(Default)]
+pub struct AttributeContainer {
+    pub discriminator: Option<Protocol>,
+    pub discriminant: Option<Protocol>,
+    pub length: Option<Protocol>,
+    pub skip_if: Option<Protocol>,
+}
+
+impl AttributeContainer {
+    pub fn set_dicriminator(&mut self, discriminator: Protocol) -> Result<(), &'static str> {
+        debug_assert!(matches!(discriminator, Protocol::Discriminator(_)));
+        if let Some(_) = &self.discriminator {
+            Err("duplicate protocol attribute `discriminator")
+        } else {
+            self.discriminator = Some(discriminator);
+            Ok(())
+        }
+    }
+
+    pub fn set_discriminant(&mut self, discriminant: Protocol) -> Result<(), &'static str> {
+        debug_assert!(matches!(discriminant, Protocol::DiscriminantFormat(_)));
+        if let Some(_) = &self.discriminant {
+            Err("duplicate protocol attribute `discriminant")
+        } else {
+            self.discriminant = Some(discriminant);
+            Ok(())
+        }
+    }
+
+    pub fn set_skip_if(&mut self, skip_if: Protocol) -> Result<(), &'static str> {
+        debug_assert!(matches!(skip_if, Protocol::SkipIf(_)));
+        if let Some(_) = &self.skip_if {
+            Err("duplicate protocol attribute `skip_if")
+        } else {
+            self.skip_if = Some(skip_if);
+            Ok(())
+        }
+    }
+
+    pub fn set_length(&mut self, length: Protocol) -> Result<(), &'static str> {
+        debug_assert!(matches!(length, Protocol::LengthPrefix {..} | Protocol::FixedLength(_)));
+        if let Some(_) = &self.length {
+            Err("duplicate protocol attribute `length")
+        } else {
+            self.length = Some(length);
+            Ok(())
+        }
+    }
+}
 
 #[derive(Debug)]
 pub enum Protocol {
@@ -18,6 +75,7 @@ pub enum Protocol {
     SkipIf(SkipExpression),
 }
 
+/// A skip condition, either path, binary expression or unary expression
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum SkipExpression {
     PathExp(ExprPath),
@@ -66,12 +124,12 @@ impl LengthPrefixKind {
 
 /// Gets the value of the `repr(type)` attribute.
 pub fn repr(attrs: &[syn::Attribute]) -> Option<syn::Ident> {
-    attribute::with_ident("repr", attrs)
+    attribute::with_ident(REPR, attrs)
 }
 
-pub fn protocol(attrs: &[syn::Attribute])
-                -> Option<Protocol> {
-    let meta_list = attrs.iter().filter_map(|attr| match attr.parse_meta() {
+
+pub fn protocol(attrs: &[syn::Attribute]) -> Result<AttributeContainer, &'static str> {
+    let meta_lists = attrs.iter().filter_map(|attr| match attr.parse_meta() {
         Ok(syn::Meta::List(meta_list)) => {
             if meta_list.path.get_ident() == Some(&syn::Ident::new("protocol", proc_macro2::Span::call_site())) {
                 Some(meta_list)
@@ -81,131 +139,147 @@ pub fn protocol(attrs: &[syn::Attribute])
             }
         }
         _ => None,
-    }).next();
+    }).collect::<Vec<MetaList>>();
 
-    let meta_list: syn::MetaList = if let Some(meta_list) = meta_list { meta_list } else { return None; };
-    let mut nested_metas = meta_list.nested.into_iter();
-
-    match nested_metas.next() {
-        Some(syn::NestedMeta::Meta(syn::Meta::List(nested_list))) => {
-            match &nested_list.path.get_ident().expect("meta is not an ident").to_string()[..] {
-                // #[protocol(length_prefix(<kind>(<prefix field name>)))]
-                "skip_if" => {
-                    let expression = expect::meta_list::single_element(nested_list).unwrap();
-                    let expression = match expression {
-                        syn::NestedMeta::Lit(syn::Lit::Str(s)) => {
-                            SkipExpression::parse_from(&s.value())
-                        }
-                        syn::NestedMeta::Meta(syn::Meta::Path(path)) => {
-                            SkipExpression::Path(path)
-                        }
-                        _ => panic!("Expected a path, binary or unary expression")
-                    };
-
-                    Some(Protocol::SkipIf(expression))
-                }
-                "fixed_length" => {
-                    let nested_list = expect::meta_list::single_literal(nested_list)
-                        .expect("expected a nested list");
-
-                    match nested_list {
-                        syn::Lit::Int(len) => {
-                            let len = len.base10_parse::<usize>().expect("Invalid fixed length, expected usize");
-                            Some(Protocol::FixedLength(len))
-                        }
-                        _ => panic!("Invalid fixed length, expected usize")
+    let mut attributes: AttributeContainer = AttributeContainer::default();
+    meta_lists.into_iter().for_each(|meta_list| {
+        meta_list.nested.into_iter().for_each(|nested_metas| {
+            match nested_metas {
+                NestedMeta::Meta(syn::Meta::List(nested_list)) => {
+                    match &nested_list.path.get_ident().expect("meta is not an ident").to_string()[..] {
+                        // #[protocol(length_prefix(<kind>(<prefix field name>)))]
+                        SKIP_IF => parse_skip_attr(&mut attributes, &nested_list),
+                        FIXED_LENGTH => parse_fixed_length_attr(&mut attributes, &nested_list),
+                        LENGTH_PREFIX => parse_length_prefix_attr(&mut attributes, &nested_list),
+                        DISCRIMINATOR => parse_discriminator_attr(&mut attributes, &nested_list),
+                        name => panic!("#[protocol({})] is not valid", name),
                     }
                 }
-                "length_prefix" => {
-                    let nested_list = expect::meta_list::nested_list(nested_list)
-                        .expect("expected a nested list");
-                    let prefix_kind = match &nested_list.path.get_ident().expect("nested list is not an ident").to_string()[..] {
-                        "bytes" => LengthPrefixKind::Bytes,
-                        "elements" => LengthPrefixKind::Elements,
-                        invalid_prefix => panic!("invalid length prefix type: '{}'", invalid_prefix),
-                    };
-
-                    let length_prefix_expr = expect::meta_list::single_element(nested_list).unwrap();
-                    let (prefix_field_name, prefix_subfield_names) = match length_prefix_expr {
-                        syn::NestedMeta::Lit(syn::Lit::Str(s)) => {
-                            let mut parts: Vec<_> = s.value()
-                                .split(".")
-                                .map(|s| syn::Ident::new(s, Span::call_site()))
-                                .collect();
-
-                            if parts.len() < 1 {
-                                panic!("there must be at least one field mentioned");
+                NestedMeta::Meta(syn::Meta::NameValue(name_value)) => {
+                    match name_value.path.get_ident() {
+                        Some(ident) => {
+                            match &ident.to_string()[..] {
+                                // #[protocol(discriminant = "<format_name>")]
+                                DISCRIMINANT => parse_discriminant_attr(&mut attributes, name_value),
+                                ident => panic!("expected 'discriminant' but got '{}", ident),
                             }
-
-                            let field_ident = parts.remove(0);
-                            let subfield_idents = parts.into_iter().collect();
-
-                            (field_ident, subfield_idents)
                         }
-                        syn::NestedMeta::Meta(syn::Meta::Path(path)) => match path.get_ident() {
-                            Some(field_ident) => (field_ident.clone(), Vec::new()),
-                            None => panic!("path is not an ident"),
-                        },
-                        _ => panic!("unexpected format for length prefix attribute"),
-                    };
-
-                    Some(Protocol::LengthPrefix { kind: prefix_kind, prefix_field_name, prefix_subfield_names })
-                }
-                "discriminator" => {
-                    let literal = expect::meta_list::single_literal(nested_list)
-                        .expect("expected a single literal");
-                    Some(Protocol::Discriminator(literal))
-                }
-                name => panic!("#[protocol({})] is not valid", name),
-            }
-        }
-        Some(syn::NestedMeta::Meta(syn::Meta::NameValue(name_value))) => {
-            match name_value.path.get_ident() {
-                Some(ident) => {
-                    match &ident.to_string()[..] {
-                        // #[protocol(discriminant = "<format_name>")]
-                        "discriminant" => {
-                            let format_kind = match name_value.lit {
-                                syn::Lit::Str(s) => match format::Enum::from_str(&s.value()) {
-                                    Ok(f) => f,
-                                    Err(()) => panic!("invalid enum discriminant format: '{}", s.value()),
-                                },
-                                _ => panic!("discriminant format mut be string"),
-                            };
-
-                            Some(Protocol::DiscriminantFormat(format_kind))
-                        },
-                        ident => panic!("expected 'discriminant' but got '{}", ident),
+                        None => panic!("expected 'discriminant' but the parsed string was not even an identifier"),
                     }
-                },
-                None => panic!("expected 'discriminant' but the parsed string was not even an identifier"),
+                }
+                _ => panic!("#[protocol(..)] attributes cannot be empty"),
             }
+
+        })
+    });
+
+    Ok(attributes)
+}
+
+fn parse_discriminant_attr(attributes: &mut AttributeContainer, name_value: MetaNameValue) {
+    let format_kind = match name_value.lit {
+        syn::Lit::Str(s) => match format::Enum::from_str(&s.value()) {
+            Ok(f) => f,
+            Err(()) => panic!("invalid enum discriminant format: '{}", s.value()),
         },
-        _ => panic!("#[protocol(..)] attributes cannot be empty"),
+        _ => panic!("discriminant format mut be string"),
+    };
+
+    attributes.set_discriminant(Protocol::DiscriminantFormat(format_kind)).unwrap();
+}
+
+fn parse_discriminator_attr(attributes: &mut AttributeContainer, nested_list: &MetaList) {
+
+    let literal = expect::meta_list::single_literal(nested_list)
+        .expect("expected a single literal");
+    attributes.set_dicriminator(Protocol::Discriminator(literal)).unwrap();
+}
+
+fn parse_length_prefix_attr(attributes: &mut AttributeContainer, nested_list: &MetaList) {
+    let nested_list = expect::meta_list::nested_list(nested_list)
+        .expect("expected a nested list");
+    let prefix_kind = match &nested_list.path.get_ident().expect("nested list is not an ident").to_string()[..] {
+        "bytes" => LengthPrefixKind::Bytes,
+        "elements" => LengthPrefixKind::Elements,
+        invalid_prefix => panic!("invalid length prefix type: '{}'", invalid_prefix),
+    };
+
+    let length_prefix_expr = expect::meta_list::single_element(&nested_list).unwrap();
+    let (prefix_field_name, prefix_subfield_names) = match length_prefix_expr {
+        syn::NestedMeta::Lit(syn::Lit::Str(s)) => {
+            let mut parts: Vec<_> = s.value()
+                .split(".")
+                .map(|s| syn::Ident::new(s, Span::call_site()))
+                .collect();
+
+            if parts.len() < 1 {
+                panic!("there must be at least one field mentioned");
+            }
+
+            let field_ident = parts.remove(0);
+            let subfield_idents = parts.into_iter().collect();
+
+            (field_ident, subfield_idents)
+        }
+        syn::NestedMeta::Meta(syn::Meta::Path(path)) => match path.get_ident() {
+            Some(field_ident) => (field_ident.clone(), Vec::new()),
+            None => panic!("path is not an ident"),
+        },
+        _ => panic!("unexpected format for length prefix attribute"),
+    };
+
+    attributes.set_length(Protocol::LengthPrefix { kind: prefix_kind, prefix_field_name, prefix_subfield_names }).unwrap();
+}
+
+fn parse_fixed_length_attr(attributes: &mut AttributeContainer, nested_list: &MetaList) {
+    let nested_list = expect::meta_list::single_literal(nested_list)
+        .expect("expected a nested list");
+
+    match nested_list {
+        syn::Lit::Int(len) => {
+            let len = len.base10_parse::<usize>().expect("Invalid fixed length, expected usize");
+            attributes.set_length(Protocol::FixedLength(len)).unwrap();
+        }
+        _ => panic!("Invalid fixed length, expected usize")
     }
+}
+
+fn parse_skip_attr(attributes: &mut AttributeContainer, nested_list: &MetaList) {
+    let expression = expect::meta_list::single_element(nested_list).unwrap();
+    let expression = match expression {
+        syn::NestedMeta::Lit(syn::Lit::Str(s)) => {
+            SkipExpression::parse_from(&s.value())
+        }
+        syn::NestedMeta::Meta(syn::Meta::Path(path)) => {
+            SkipExpression::Path(path)
+        }
+        _ => panic!("Expected a path, binary or unary expression")
+    };
+
+    attributes.set_skip_if(Protocol::SkipIf(expression)).unwrap();
 }
 
 mod expect {
     pub mod meta_list {
-        pub fn nested_list(list: syn::MetaList)
-            -> Result<syn::MetaList, ()> {
+        use syn::MetaList;
+
+        pub fn nested_list(list: &MetaList) -> Result<MetaList, ()> {
             assert!(list.nested.len() == 1, "list should only have one item");
-            match list.nested.into_iter().next().unwrap() {
-                syn::NestedMeta::Meta(syn::Meta::List(nested)) => Ok(nested),
+            match list.nested.iter().next().unwrap() {
+                syn::NestedMeta::Meta(syn::Meta::List(nested)) => Ok(nested.clone()),
                 _ => Err(()),
             }
         }
 
         /// Expects a list with a single element.
-        pub fn single_element(list: syn::MetaList)
-            -> Result<syn::NestedMeta, ()> {
+        pub fn single_element(list: &MetaList) -> Result<syn::NestedMeta, ()> {
             assert!(list.nested.len() == 1, "list should only have one item");
-            Ok(list.nested.into_iter().next().unwrap())
+            Ok(list.nested.iter().next().unwrap().clone())
         }
 
         /// A single word `name(literal)`.
-        pub fn single_literal(list: syn::MetaList)
-            -> Result<syn::Lit, ()> {
+        pub fn single_literal(list: &MetaList)
+                              -> Result<syn::Lit, ()> {
             single_element(list).and_then(|nested| match nested {
                 syn::NestedMeta::Lit(lit) => Ok(lit),
                 _ => Err(()),
@@ -222,14 +296,14 @@ mod attribute {
                     Some(ident) if ident == name => Some(list.nested.into_iter().collect()),
                     _ => None,
                 }
-            },
+            }
             _ => None,
         }).next()
     }
 
     pub fn with_unitary_list(name: &str, attrs: &[syn::Attribute]) -> Option<syn::NestedMeta> {
         with_list(name, attrs).map(|list| {
-            if list.len() != 1{ panic!("expected only one meta inside list but found {}", list.len()); }
+            if list.len() != 1 { panic!("expected only one meta inside list but found {}", list.len()); }
             list.into_iter().next().unwrap()
         })
     }

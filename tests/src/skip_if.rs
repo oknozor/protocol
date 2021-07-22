@@ -30,6 +30,15 @@ struct SkipIfBinaryExpWithMultipleFieldReference {
 }
 
 #[derive(Protocol, Debug, PartialEq, Eq)]
+struct SkipWithLengthPrefix {
+    pub condition: bool,
+    #[protocol(fixed_length(3))]
+    #[protocol(skip_if("condition"))]
+    pub message: Option<Vec<u32>>,
+}
+
+
+#[derive(Protocol, Debug, PartialEq, Eq)]
 struct ReadOptionStillWorks {
     pub message: Option<u8>,
 }
@@ -58,7 +67,7 @@ fn should_not_skip_field_when_not_field_condition() {
     assert_eq!(SkipIfField {
         condition: true,
         message: None,
-    }, SkipIfField::from_raw_bytes(&[ 1 ], &Settings::default()).unwrap());
+    }, SkipIfField::from_raw_bytes(&[1], &Settings::default()).unwrap());
 }
 
 #[test]
@@ -74,7 +83,7 @@ fn should_not_skip_field_when_not_path_condition() {
     assert_eq!(SkipIfPath {
         condition: true,
         message: None,
-    }, SkipIfPath::from_raw_bytes(&[ 1 ], &Settings::default()).unwrap());
+    }, SkipIfPath::from_raw_bytes(&[1], &Settings::default()).unwrap());
 }
 
 
@@ -83,7 +92,7 @@ fn should_skip_field_when_binary_exp_condition_is_met() {
     assert_eq!(SkipIfBinaryExp {
         condition: 7,
         message: None,
-    }, SkipIfBinaryExp::from_raw_bytes(&[ 7 ], &Settings::default()).unwrap());
+    }, SkipIfBinaryExp::from_raw_bytes(&[7], &Settings::default()).unwrap());
 }
 
 #[test]
@@ -91,7 +100,7 @@ fn should_not_skip_field_when_binary_exp_condition_is_not_met() {
     assert_eq!(SkipIfBinaryExp {
         condition: 1,
         message: Some(1),
-    }, SkipIfBinaryExp::from_raw_bytes(&[ 1, 1 ], &Settings::default()).unwrap());
+    }, SkipIfBinaryExp::from_raw_bytes(&[1, 1], &Settings::default()).unwrap());
 }
 
 #[test]
@@ -100,7 +109,7 @@ fn should_skip_field_with_multiple_condition() {
         condition_1: 7,
         condition_2: true,
         message: None,
-    }, SkipIfBinaryExpWithMultipleFieldReference::from_raw_bytes(&[ 7, 1], &Settings::default()).unwrap());
+    }, SkipIfBinaryExpWithMultipleFieldReference::from_raw_bytes(&[7, 1], &Settings::default()).unwrap());
 }
 
 #[test]
@@ -109,9 +118,29 @@ fn should_not_skip_field_with_multiple_condition() {
         condition_1: 7,
         condition_2: false,
         message: Some(1),
-    }, SkipIfBinaryExpWithMultipleFieldReference::from_raw_bytes(&[ 7, 0, 1], &Settings::default()).unwrap());
+    }, SkipIfBinaryExpWithMultipleFieldReference::from_raw_bytes(&[7, 0, 1], &Settings::default()).unwrap());
 }
 
+#[test]
+fn should_skip_vec_with_length_prefix() {
+    assert_eq!(SkipWithLengthPrefix {
+        condition: true,
+        message: None,
+    }, SkipWithLengthPrefix::from_raw_bytes(&[ 1 ], &Settings::default()).unwrap());
+}
+
+#[test]
+fn should_read_field_with_length_and_skip_condition_not_met() {
+    assert_eq!(SkipWithLengthPrefix {
+        condition: false,
+        message: Some(vec![1, 2, 3]),
+    }, SkipWithLengthPrefix::from_raw_bytes(&[
+        0,
+        0, 0, 0, 1,
+        0, 0, 0, 2,
+        0, 0, 0, 3,
+    ], &Settings::default()).unwrap());
+}
 
 
 

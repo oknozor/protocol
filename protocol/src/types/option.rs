@@ -13,7 +13,7 @@ impl<T: Parcel> Parcel for Option<T>
             if skip {
                 Ok(None)
             } else {
-                Ok(Some(T::read(read, settings)?))
+                Ok(Some(T::read_field(read, settings, hints)?))
             }
         } else {
             let is_some = bool::read(read, settings)?;

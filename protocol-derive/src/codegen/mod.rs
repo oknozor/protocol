@@ -136,7 +136,7 @@ fn update_hints_after_read<'a>(field: &'a syn::Field,
 fn update_hint_fixed_length<'a>(field: &'a syn::Field,
                                 fields: impl IntoIterator<Item=&'a syn::Field> + Clone)
                                 -> TokenStream {
-    if let Some(attr::Protocol::FixedLength(length)) = attr::protocol(&field.attrs) {
+    if let Some(attr::Protocol::FixedLength(length)) = attr::protocol(&field.attrs).unwrap().length {
         let position = fields.clone().into_iter().position(|f| f == field).unwrap();
 
         quote! {
@@ -148,7 +148,7 @@ fn update_hint_fixed_length<'a>(field: &'a syn::Field,
 }
 
 fn maybe_skip(field: syn::Field) -> Option<TokenStream> {
-    if let Some(attr::Protocol::SkipIf(expr)) = attr::protocol(&field.attrs) {
+    if let Some(attr::Protocol::SkipIf(expr)) = attr::protocol(&field.attrs).unwrap().skip_if {
         Some(expr.to_token_stream())
     } else {
         None
@@ -190,7 +190,7 @@ fn length_prefix_of<'a>(field: &'a syn::Field,
     let potential_prefix = field.ident.as_ref();
 
     let prefixes_of: Vec<&'a Field> = fields.clone().into_iter().filter(|potential_prefix_of| {
-        match attr::protocol(&potential_prefix_of.attrs) {
+        match attr::protocol(&potential_prefix_of.attrs).unwrap().length {
             Some(attr::Protocol::LengthPrefix { ref prefix_field_name, .. }) => {
                 if !fields.clone().into_iter().any(|f| f.ident.as_ref() == Some(prefix_field_name)) {
                     panic!("length prefix is invalid: there is no sibling field named '{}", prefix_field_name);
@@ -206,8 +206,8 @@ fn length_prefix_of<'a>(field: &'a syn::Field,
     prefixes_of.iter()
         .map(|prefix_of| {
             let prefix_of_index = fields.clone().into_iter().position(|f| &f == prefix_of).unwrap();
-            match attr::protocol(&prefix_of.attrs).unwrap() {
-                attr::Protocol::LengthPrefix { kind, prefix_subfield_names, .. } => {
+            match attr::protocol(&prefix_of.attrs).unwrap().length {
+                Some(attr::Protocol::LengthPrefix { kind, prefix_subfield_names, .. }) => {
                     (prefix_of_index, kind.clone(), prefix_subfield_names)
                 }
                 _ => unreachable!(),
