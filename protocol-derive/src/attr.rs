@@ -21,43 +21,43 @@ pub struct AttributeContainer {
 }
 
 impl AttributeContainer {
-    pub fn set_dicriminator(&mut self, discriminator: Protocol) -> Result<(), &'static str> {
+    pub fn set_dicriminator(&mut self, discriminator: Protocol) {
         debug_assert!(matches!(discriminator, Protocol::Discriminator(_)));
         if let Some(_) = &self.discriminator {
-            Err("duplicate protocol attribute `discriminator")
+            panic!("duplicate protocol attribute `{}`", DISCRIMINATOR)
         } else {
             self.discriminator = Some(discriminator);
-            Ok(())
         }
     }
 
-    pub fn set_discriminant(&mut self, discriminant: Protocol) -> Result<(), &'static str> {
+    pub fn set_discriminant(&mut self, discriminant: Protocol) {
         debug_assert!(matches!(discriminant, Protocol::DiscriminantFormat(_)));
         if let Some(_) = &self.discriminant {
-            Err("duplicate protocol attribute `discriminant")
+            panic!("duplicate protocol attribute `{}`", DISCRIMINANT)
         } else {
             self.discriminant = Some(discriminant);
-            Ok(())
         }
     }
 
-    pub fn set_skip_if(&mut self, skip_if: Protocol) -> Result<(), &'static str> {
+    pub fn set_skip_if(&mut self, skip_if: Protocol) {
         debug_assert!(matches!(skip_if, Protocol::SkipIf(_)));
         if let Some(_) = &self.skip_if {
-            Err("duplicate protocol attribute `skip_if")
+            panic!("duplicate protocol attribute `{}`", SKIP_IF)
         } else {
             self.skip_if = Some(skip_if);
-            Ok(())
         }
     }
 
-    pub fn set_length(&mut self, length: Protocol) -> Result<(), &'static str> {
+    pub fn set_length(&mut self, length: Protocol) {
         debug_assert!(matches!(length, Protocol::LengthPrefix {..} | Protocol::FixedLength(_)));
-        if let Some(_) = &self.length {
-            Err("duplicate protocol attribute `length")
+        if let Some(l) = &self.length {
+            match l {
+                Protocol::LengthPrefix { .. } => panic!("duplicate protocol attribute `{}`", LENGTH_PREFIX),
+                Protocol::FixedLength(_) => panic!("duplicate protocol attribute `{}`", FIXED_LENGTH),
+                _ => unreachable!()
+            }
         } else {
             self.length = Some(length);
-            Ok(())
         }
     }
 }
@@ -128,7 +128,7 @@ pub fn repr(attrs: &[syn::Attribute]) -> Option<syn::Ident> {
 }
 
 
-pub fn protocol(attrs: &[syn::Attribute]) -> Result<AttributeContainer, &'static str> {
+pub fn protocol(attrs: &[syn::Attribute]) -> AttributeContainer {
     let meta_lists = attrs.iter().filter_map(|attr| match attr.parse_meta() {
         Ok(syn::Meta::List(meta_list)) => {
             if meta_list.path.get_ident() == Some(&syn::Ident::new("protocol", proc_macro2::Span::call_site())) {
@@ -173,7 +173,7 @@ pub fn protocol(attrs: &[syn::Attribute]) -> Result<AttributeContainer, &'static
         })
     });
 
-    Ok(attributes)
+    attributes
 }
 
 fn parse_discriminant_attr(attributes: &mut AttributeContainer, name_value: MetaNameValue) {
@@ -185,14 +185,14 @@ fn parse_discriminant_attr(attributes: &mut AttributeContainer, name_value: Meta
         _ => panic!("discriminant format mut be string"),
     };
 
-    attributes.set_discriminant(Protocol::DiscriminantFormat(format_kind)).unwrap();
+    attributes.set_discriminant(Protocol::DiscriminantFormat(format_kind));
 }
 
 fn parse_discriminator_attr(attributes: &mut AttributeContainer, nested_list: &MetaList) {
 
     let literal = expect::meta_list::single_literal(nested_list)
         .expect("expected a single literal");
-    attributes.set_dicriminator(Protocol::Discriminator(literal)).unwrap();
+    attributes.set_dicriminator(Protocol::Discriminator(literal));
 }
 
 fn parse_length_prefix_attr(attributes: &mut AttributeContainer, nested_list: &MetaList) {
@@ -228,7 +228,7 @@ fn parse_length_prefix_attr(attributes: &mut AttributeContainer, nested_list: &M
         _ => panic!("unexpected format for length prefix attribute"),
     };
 
-    attributes.set_length(Protocol::LengthPrefix { kind: prefix_kind, prefix_field_name, prefix_subfield_names }).unwrap();
+    attributes.set_length(Protocol::LengthPrefix { kind: prefix_kind, prefix_field_name, prefix_subfield_names });
 }
 
 fn parse_fixed_length_attr(attributes: &mut AttributeContainer, nested_list: &MetaList) {
@@ -238,7 +238,7 @@ fn parse_fixed_length_attr(attributes: &mut AttributeContainer, nested_list: &Me
     match nested_list {
         syn::Lit::Int(len) => {
             let len = len.base10_parse::<usize>().expect("Invalid fixed length, expected usize");
-            attributes.set_length(Protocol::FixedLength(len)).unwrap();
+            attributes.set_length(Protocol::FixedLength(len));
         }
         _ => panic!("Invalid fixed length, expected usize")
     }
@@ -256,7 +256,7 @@ fn parse_skip_attr(attributes: &mut AttributeContainer, nested_list: &MetaList) 
         _ => panic!("Expected a path, binary or unary expression")
     };
 
-    attributes.set_skip_if(Protocol::SkipIf(expression)).unwrap();
+    attributes.set_skip_if(Protocol::SkipIf(expression));
 }
 
 mod expect {
@@ -264,7 +264,7 @@ mod expect {
         use syn::MetaList;
 
         pub fn nested_list(list: &MetaList) -> Result<MetaList, ()> {
-            assert!(list.nested.len() == 1, "list should only have one item");
+            assert_eq!(list.nested.len(), 1, "list should only have one item");
             match list.nested.iter().next().unwrap() {
                 syn::NestedMeta::Meta(syn::Meta::List(nested)) => Ok(nested.clone()),
                 _ => Err(()),
@@ -273,7 +273,7 @@ mod expect {
 
         /// Expects a list with a single element.
         pub fn single_element(list: &MetaList) -> Result<syn::NestedMeta, ()> {
-            assert!(list.nested.len() == 1, "list should only have one item");
+            assert_eq!(list.nested.len(), 1, "list should only have one item");
             Ok(list.nested.iter().next().unwrap().clone())
         }
 

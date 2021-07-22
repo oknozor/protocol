@@ -3,6 +3,7 @@ use syn;
 use syn::{Field};
 
 use crate::attr;
+use crate::attr::{AttributeContainer, protocol};
 
 pub mod enums;
 
@@ -38,11 +39,13 @@ pub fn named_fields_declarations(fields: &syn::Fields) -> TokenStream {
         let fields_variables: Vec<TokenStream> = fields_named.named.iter().map(|field| {
             let field_name = &field.ident;
             let field_ty = &field.ty;
+            let field_attributes = &protocol(&field.attrs);
+
             // This field may store the length prefix of one or more other field.
             let update_hints = update_hints_after_read(field, &fields_named.named);
-            let update_hints_fixed = update_hint_fixed_length(field, &fields_named.named);
+            let update_hints_fixed = update_hint_fixed_length(field, &fields_named.named, field_attributes);
 
-            if let Some(skip_condition) = maybe_skip(field.clone()) {
+            if let Some(skip_condition) = maybe_skip(field_attributes) {
                 quote! {
                     #update_hints_fixed
                     __hints.set_skip(#skip_condition);
@@ -78,9 +81,12 @@ fn read_named_fields_enum(fields_named: &syn::FieldsNamed)
     let field_initializers: Vec<_> = fields_named.named.iter().map(|field| {
         let field_name = &field.ident;
         let field_ty = &field.ty;
+        let field_attributes = &protocol(&field.attrs);
+
+
         // This field may store the length prefix of one or more other field.
         let update_hints = update_hints_after_read(field, &fields_named.named);
-        let update_hints_fixed = update_hint_fixed_length(field, &fields_named.named);
+        let update_hints_fixed = update_hint_fixed_length(field, &fields_named.named, field_attributes);
 
         quote! {
             #field_name : {
@@ -134,9 +140,10 @@ fn update_hints_after_read<'a>(field: &'a syn::Field,
 }
 
 fn update_hint_fixed_length<'a>(field: &'a syn::Field,
-                                fields: impl IntoIterator<Item=&'a syn::Field> + Clone)
+                                fields: impl IntoIterator<Item=&'a syn::Field> + Clone,
+                                attributes: &AttributeContainer)
                                 -> TokenStream {
-    if let Some(attr::Protocol::FixedLength(length)) = attr::protocol(&field.attrs).unwrap().length {
+    if let Some(attr::Protocol::FixedLength(length)) = attributes.length {
         let position = fields.clone().into_iter().position(|f| f == field).unwrap();
 
         quote! {
@@ -147,8 +154,8 @@ fn update_hint_fixed_length<'a>(field: &'a syn::Field,
     }
 }
 
-fn maybe_skip(field: syn::Field) -> Option<TokenStream> {
-    if let Some(attr::Protocol::SkipIf(expr)) = attr::protocol(&field.attrs).unwrap().skip_if {
+fn maybe_skip(attributes: &AttributeContainer) -> Option<TokenStream> {
+    if let Some(attr::Protocol::SkipIf(expr)) = &attributes.skip_if {
         Some(expr.to_token_stream())
     } else {
         None
@@ -190,7 +197,7 @@ fn length_prefix_of<'a>(field: &'a syn::Field,
     let potential_prefix = field.ident.as_ref();
 
     let prefixes_of: Vec<&'a Field> = fields.clone().into_iter().filter(|potential_prefix_of| {
-        match attr::protocol(&potential_prefix_of.attrs).unwrap().length {
+        match attr::protocol(&potential_prefix_of.attrs).length {
             Some(attr::Protocol::LengthPrefix { ref prefix_field_name, .. }) => {
                 if !fields.clone().into_iter().any(|f| f.ident.as_ref() == Some(prefix_field_name)) {
                     panic!("length prefix is invalid: there is no sibling field named '{}", prefix_field_name);
@@ -206,7 +213,7 @@ fn length_prefix_of<'a>(field: &'a syn::Field,
     prefixes_of.iter()
         .map(|prefix_of| {
             let prefix_of_index = fields.clone().into_iter().position(|f| &f == prefix_of).unwrap();
-            match attr::protocol(&prefix_of.attrs).unwrap().length {
+            match attr::protocol(&prefix_of.attrs).length {
                 Some(attr::Protocol::LengthPrefix { kind, prefix_subfield_names, .. }) => {
                     (prefix_of_index, kind.clone(), prefix_subfield_names)
                 }
@@ -219,9 +226,11 @@ fn write_named_fields(fields_named: &syn::FieldsNamed)
                       -> TokenStream {
     let field_writers: Vec<_> = fields_named.named.iter().map(|field| {
         let field_name = &field.ident;
+        let field_attributes = &protocol(&field.attrs);
+
         // This field may store the length prefix of another field.
         let update_hints = update_hints_after_write(field, &fields_named.named);
-        let update_hints_fixed = update_hint_fixed_length(field, &fields_named.named);
+        let update_hints_fixed = update_hint_fixed_length(field, &fields_named.named, field_attributes);
 
         quote! {
             {
