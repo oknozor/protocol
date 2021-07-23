@@ -26,6 +26,8 @@ pub enum LengthPrefixKind {
     Bytes,
     /// The length prefix stores the total number of elements inside another field.
     Elements,
+    /// The length prefix stores the total number of elements inside another iterable field.
+    Pointers,
 }
 
 

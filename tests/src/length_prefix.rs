@@ -56,6 +56,15 @@ pub struct WithFixedLength {
     pub data: Vec<u32>,
 }
 
+#[derive(Protocol, Debug, PartialEq, Eq)]
+pub struct PointerLength {
+    #[protocol(fixed_length(3))]
+    pub ptr: Vec<u32>,
+    #[protocol(length_prefix(pointers(ptr)))]
+    pub data: Vec<u32>,
+}
+
+
 #[test]
 fn can_read_length_prefix_5_bytes_string() {
     assert_eq!(Foo {
@@ -142,8 +151,39 @@ fn can_read_fixed_length_prefix() {
         &[
             0, 0, 0, 1, // 1
             0, 0, 0, 2, // 2
-            0, 0, 0, 3
-        ], // 3
+            0, 0, 0, 3  // 3
+        ],
         &Settings::default()).unwrap());
 }
+
+#[test]
+fn can_read_pointer_length_prefix() {
+    assert_eq!(PointerLength {
+        ptr: vec![0, 0, 1],
+        data: vec![3],
+    }, PointerLength::from_raw_bytes(
+        &[
+            0, 0, 0, 0,// Disabled
+            0, 0, 0, 0,// Disabled
+            0, 0, 0, 1,// Enabled
+            0, 0, 0, 3 // element enabled 1
+        ],
+        &Settings::default()).unwrap());
+}
+
+#[test]
+fn can_read_pointer_length_prefix_2() {
+    assert_eq!(PointerLength {
+        ptr: vec![0, 2, 1],
+        data: vec![3, 6],
+    }, PointerLength::from_raw_bytes(
+        &[
+            0, 0, 0, 0, // Disabled
+            0, 0, 0, 2, // Enabled
+            0, 0, 0, 1, // Enabled
+            0, 0, 0, 3, // element enabled 1
+            0, 0, 0, 6  // element enabled 1
+        ], &Settings::default()).unwrap());
+}
+
 

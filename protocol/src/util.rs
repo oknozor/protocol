@@ -101,7 +101,7 @@ pub fn read_list_ext<S,T>(read: &mut dyn Read,
 
                     Ok(items)
                 },
-                hint::LengthPrefixKind::Elements => {
+                hint::LengthPrefixKind::Elements | hint::LengthPrefixKind::Pointers => {
                     read_items(length.length, read, settings).map(|i| i.collect())
                 },
             }

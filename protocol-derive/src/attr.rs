@@ -110,6 +110,7 @@ impl SkipExpression {
 pub enum LengthPrefixKind {
     Bytes,
     Elements,
+    Pointers,
 }
 
 impl LengthPrefixKind {
@@ -118,6 +119,7 @@ impl LengthPrefixKind {
         match *self {
             LengthPrefixKind::Bytes => quote!(protocol::hint::LengthPrefixKind::Bytes),
             LengthPrefixKind::Elements => quote!(protocol::hint::LengthPrefixKind::Elements),
+            LengthPrefixKind::Pointers => quote!(protocol::hint::LengthPrefixKind::Pointers)
         }
     }
 }
@@ -201,6 +203,7 @@ fn parse_length_prefix_attr(attributes: &mut AttributeContainer, nested_list: &M
     let prefix_kind = match &nested_list.path.get_ident().expect("nested list is not an ident").to_string()[..] {
         "bytes" => LengthPrefixKind::Bytes,
         "elements" => LengthPrefixKind::Elements,
+        "pointers" => LengthPrefixKind::Pointers,
         invalid_prefix => panic!("invalid length prefix type: '{}'", invalid_prefix),
     };
 
@@ -228,7 +231,7 @@ fn parse_length_prefix_attr(attributes: &mut AttributeContainer, nested_list: &M
         _ => panic!("unexpected format for length prefix attribute"),
     };
 
-    attributes.set_length(Protocol::LengthPrefix { kind: prefix_kind, prefix_field_name, prefix_subfield_names });
+    attributes.set_length(Protocol::LengthPrefix { kind:  prefix_kind, prefix_field_name, prefix_subfield_names });
 }
 
 fn parse_fixed_length_attr(attributes: &mut AttributeContainer, nested_list: &MetaList) {

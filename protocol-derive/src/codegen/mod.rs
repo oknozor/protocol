@@ -3,7 +3,7 @@ use syn;
 use syn::{Field};
 
 use crate::attr;
-use crate::attr::{AttributeContainer, protocol};
+use crate::attr::{AttributeContainer, protocol, LengthPrefixKind};
 
 pub mod enums;
 
@@ -121,12 +121,24 @@ fn update_hints_after_read<'a>(field: &'a syn::Field,
                                fields: impl IntoIterator<Item=&'a syn::Field> + Clone)
                                -> TokenStream {
     let hint_setters = length_prefix_of(field, fields.clone()).iter().map(|(length_prefix_of, kind, prefix_subfield_names)| {
-        let kind = kind.path_expr();
         let field_name = &field.ident;
+        let declare_length = if let &LengthPrefixKind::Pointers = kind {
+            quote! {
+                let length = (#field_name #(.#prefix_subfield_names)* ).iter()
+                    .filter(|pointer| **pointer != 0)
+                    .count();
+            }
+        } else {
+            quote! {
+                let length = (#field_name #(.#prefix_subfield_names)* ).clone() as usize;
+            }
+        };
+
+        let kind = kind.path_expr();
+
         quote! {
-            __hints.set_field_length(#length_prefix_of,
-                (#field_name #(.#prefix_subfield_names)* ).clone() as usize,
-                #kind);
+            #declare_length
+            __hints.set_field_length(#length_prefix_of, length, #kind);
         }
     }).collect::<Vec<TokenStream>>();
 
@@ -167,12 +179,24 @@ fn update_hints_after_write<'a>(field: &'a syn::Field,
                                 -> TokenStream {
     let hint_setters = length_prefix_of(field, fields.clone()).iter().map(|(length_prefix_of, kind, prefix_subfield_names)| {
         let field_name = &field.ident;
+
+        let declare_length = if let &LengthPrefixKind::Pointers = kind {
+            quote! {
+                let length = (self.#field_name #(.#prefix_subfield_names)* ).iter()
+                    .filter(|pointer| **pointer != 0)
+                    .count();
+            }
+        } else {
+            quote! {
+                let length = (self.#field_name #(.#prefix_subfield_names)* ).clone() as usize;
+            }
+        };
+
         let kind = kind.path_expr();
 
         quote! {
-                __hints.set_field_length(#length_prefix_of,
-                                         (self.#field_name #(.#prefix_subfield_names)* ).clone() as usize,
-                                         #kind);
+                #declare_length
+                __hints.set_field_length(#length_prefix_of, length, #kind);
         }
     }).collect::<Vec<TokenStream>>();
 
