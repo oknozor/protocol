@@ -44,7 +44,7 @@ impl<S: types::Integer> String<S>
 
 impl<S: types::Integer> Parcel for String<S>
 {
-    const TYPE_NAME: &'static str = "protocol::String<S>";
+    const TYPE_NAME: &'static str = "djin_protocol::String<S>";
 
     fn read_field(read: &mut dyn Read,
             settings: &Settings,

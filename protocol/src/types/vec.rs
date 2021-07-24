@@ -21,7 +21,7 @@ impl<S: types::Integer, T: Parcel> Vec<S,T>
 
 impl<S: types::Integer, T: Parcel> Parcel for Vec<S, T>
 {
-    const TYPE_NAME: &'static str = "protocol::Vec<S,T>";
+    const TYPE_NAME: &'static str = "djin_protocol::Vec<S,T>";
 
     fn read_field(read: &mut dyn Read,
                   settings: &Settings,

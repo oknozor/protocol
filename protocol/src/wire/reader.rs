@@ -21,11 +21,11 @@ use std::io::prelude::*;
 /// once enough data has been buffered.
 ///
 /// ```
-/// use protocol;
+/// use djin_protocol;
 /// use std::io::Write;
 ///
-/// let mut reader = protocol::wire::Reader::new();
-/// let settings = protocol::Settings::default();
+/// let mut reader = djin_protocol::wire::Reader::new();
+/// let settings = djin_protocol::Settings::default();
 ///
 /// // No bytes received yet.
 /// assert_eq!(None, reader.poll::<u32>(&settings).unwrap());

@@ -22,9 +22,9 @@ use std::{marker, mem};
 /// Examples:
 ///
 /// ```
-/// extern crate protocol;
-/// #[macro_use] extern crate protocol_derive;
-/// use protocol::Parcel;
+/// extern crate djin_protocol;
+/// #[macro_use] extern crate djin_protocol_derive;
+/// use djin_protocol::Parcel;
 ///
 /// /// An example packet with a length prefix disjoint
 /// /// from its data, with the data also
@@ -35,7 +35,7 @@ use std::{marker, mem};
 ///     /// The version number of the protocol.
 ///     pub version_number: (u32, u32),
 ///     #[protocol(length_prefix(bytes(reason_length)))]
-///     pub reason: protocol::logic::Aligned<String, u64>,
+///     pub reason: djin_protocol::logic::Aligned<String, u64>,
 ///
 /// }
 ///
@@ -43,7 +43,7 @@ use std::{marker, mem};
 ///     reason_length: 12,
 ///     version_number: (11, 0xdeadbeef),
 ///     reason: "hello world!".to_owned().into(),
-/// }.raw_bytes(&protocol::Settings::default()).unwrap();
+/// }.raw_bytes(&djin_protocol::Settings::default()).unwrap();
 ///
 /// assert_eq!(&[
 ///     12, // reason length

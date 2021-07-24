@@ -3,8 +3,7 @@
 //! Here is an example of `#[derive(Protocol)]`.
 //!
 //! ```
-//! #[macro_use] extern crate protocol_derive;
-//!
+//! #[macro_use] extern crate djin_protocol_derive;
 //! #[derive(Protocol)]
 //! struct Packet {
 //!     version_number: u8,
@@ -34,8 +33,7 @@
 //! represents the total number of bytes that make up a field.
 //!
 //! ```
-//! #[macro_use] extern crate protocol_derive;
-//!
+//! #[macro_use] extern crate djin_protocol_derive;
 //! #[derive(Protocol)]
 //! pub struct Foo {
 //!     /// This field specifes the length of the last field `reason`.
@@ -57,8 +55,7 @@
 //! represents the number of elements in a collection or list.
 //!
 //! ```
-//! #[macro_use] extern crate protocol_derive;
-//!
+//! #[macro_use] extern crate djin_protocol_derive;
 //! #[derive(Protocol)]
 //! pub struct Bar {
 //!     /// This field specifes the number of elements in 'data'.
@@ -92,8 +89,7 @@
 //! Example:
 //!
 //! ```
-//! #[macro_use] extern crate protocol_derive;
-//!
+//! #[macro_use] extern crate djin_protocol_derive;
 //! #[derive(Protocol)]
 //! struct Packet {
 //!     /// The length of the adjacent 'reason' field is nested under this field.

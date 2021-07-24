@@ -9,9 +9,8 @@
 //! ## Get the raw bytes representing a parcel.
 //!
 //! ```
-//! extern crate protocol;
-//! #[macro_use] extern crate protocol_derive;
-//!
+//! extern crate djin_protocol;
+//! #[macro_use] extern crate djin_protocol_derive;
 //! #[derive(Protocol, Debug, PartialEq)]
 //! pub struct Health(pub u8);
 //!
@@ -23,7 +22,7 @@
 //!     pub velocity: (i16, i16, i16),
 //! }
 //!
-//! use protocol::Parcel;
+//! use djin_protocol::Parcel;
 //!
 //! assert_eq!(vec![
 //!     0, 0, 0, 3, // "Bob" string length prefix
@@ -36,7 +35,7 @@
 //!     health: Health(100),
 //!     position: (10, 81, -105),
 //!     velocity: (0, 0, 0),
-//! }.raw_bytes(&protocol::Settings::default()).unwrap());
+//! }.raw_bytes(&djin_protocol::Settings::default()).unwrap());
 //! ```
 //!
 //! ## Enums
@@ -48,9 +47,8 @@
 //! ### String discriminators
 //!
 //! ```
-//! extern crate protocol;
-//! #[macro_use] extern crate protocol_derive;
-//!
+//! extern crate djin_protocol;
+//! #[macro_use] extern crate djin_protocol_derive;
 //! // This enum, like all enums, defaults to using String discriminators.
 //! #[derive(Protocol, Debug, PartialEq)]
 //! enum Foo { A, B, C }
@@ -74,9 +72,8 @@
 //! ### Integer discriminators
 //!
 //! ```
-//! extern crate protocol;
-//! #[macro_use] extern crate protocol_derive;
-//!
+//! extern crate djin_protocol;
+//! #[macro_use] extern crate djin_protocol_derive;
 //! // An enum with integer discriminators.
 //! #[derive(Protocol, Debug, PartialEq)]
 //! #[protocol(discriminant = "integer")]
@@ -88,10 +85,10 @@
 //!     Beez, // defaults to `prior discriminator + 1`, therefore has a discriminator of 1235.
 //! }
 //!
-//! use protocol::{Enum, Parcel};
+//! use djin_protocol::{Enum, Parcel};
 //!
 //! // By default, integer discriminators are 32-bits.
-//! assert_eq!([0u8, 0, 0, 2], &Baz::Bing.discriminator().raw_bytes(&protocol::Settings::default()).unwrap()[..]);
+//! assert_eq!([0u8, 0, 0, 2], &Baz::Bing.discriminator().raw_bytes(&djin_protocol::Settings::default()).unwrap()[..]);
 //!
 //! assert_eq!(0, Baz::Fizz.discriminator());
 //! assert_eq!(1, Baz::Buzz.discriminator());
@@ -103,9 +100,8 @@
 //! It is possible to set the underlying integer type via the `#[repr(<type>)]` attribute.
 //!
 //! ```
-//! extern crate protocol;
-//! #[macro_use] extern crate protocol_derive;
-//!
+//! extern crate djin_protocol;
+//! #[macro_use] extern crate djin_protocol_derive;
 //! #[derive(Protocol, Debug, PartialEq)]
 //! #[protocol(discriminant = "integer")]
 //! #[repr(u8)] // Force discriminators to be 8-bit.
@@ -114,12 +110,12 @@
 //!     Universe(String), Everything(String),
 //! }
 //!
-//! use protocol::{Enum, Parcel};
+//! use djin_protocol::{Enum, Parcel};
 //!
 //! assert_eq!([2, // 1-byte discriminator
 //!             0, 0, 0, 3, // string length
 //!             b'f', b'o', b'o', // the string
-//!             ], &Hello::SolarSystem("foo".to_owned()).raw_bytes(&protocol::Settings::default()).unwrap()[..]);
+//!             ], &Hello::SolarSystem("foo".to_owned()).raw_bytes(&djin_protocol::Settings::default()).unwrap()[..]);
 //! ```
 //!
 //! Discriminators can be overriden on a per-variant basis via
@@ -129,9 +125,8 @@
 //! the `Variant = <discriminator>` syntax may be used.
 //!
 //! ```
-//! extern crate protocol;
-//! #[macro_use] extern crate protocol_derive;
-//!
+//! extern crate djin_protocol;
+//! #[macro_use] extern crate djin_protocol_derive;
 //! #[derive(Protocol, Debug, PartialEq)]
 //! #[protocol(discriminant = "integer")]
 //! #[repr(u8)] // Force discriminators to be 8-bit.
@@ -149,7 +144,7 @@
 //!     Everything(String),
 //! }
 //!
-//! use protocol::{Enum, Parcel};
+//! use djin_protocol::{Enum, Parcel};
 //!
 //! assert_eq!(111, Numbered::C.discriminator());
 //! assert_eq!(67, Numbered::D.discriminator());

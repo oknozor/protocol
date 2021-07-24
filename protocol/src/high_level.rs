@@ -10,10 +10,9 @@ use std::fmt;
 /// # Example
 ///
 /// ```
-/// #[macro_use] extern crate protocol_derive;
-/// extern crate protocol;
+/// #[macro_use] extern crate djin_protocol_derive;/// extern crate djin_protocol;
 ///
-/// use protocol::Parcel;
+/// use djin_protocol::Parcel;
 ///
 /// #[derive(Protocol)]
 /// pub struct RawPacket {
@@ -34,7 +33,7 @@ use std::fmt;
 ///     },
 /// }
 ///
-/// impl protocol::HighLevel for Login {
+/// impl djin_protocol::HighLevel for Login {
 ///     type LowLevel = RawPacket;
 ///
 ///     fn into_low_level(self) -> RawPacket {
@@ -53,9 +52,9 @@ use std::fmt;
 ///
 ///     fn from_low_level(low_level: RawPacket,
 ///                       _: &mut std::io::Read,
-///                       _: &protocol::Settings,
-///                       _: &mut protocol::hint::Hints)
-///         -> Result<Self, protocol::Error> {
+///                       _: &djin_protocol::Settings,
+///                       _: &mut djin_protocol::hint::Hints)
+///         -> Result<Self, djin_protocol::Error> {
 ///         match low_level.opcode {
 ///             0 => Ok(Login::Success { message: String::from_utf8(low_level.payload).unwrap() }),
 ///             1 => Ok(Login::Failure {
@@ -72,7 +71,7 @@ use std::fmt;
 /// }
 ///
 /// let high_level = Login::Success { message: "Hi!".to_owned() };
-/// assert_eq!(11, high_level.raw_bytes(&protocol::Settings::default()).unwrap().len());
+/// assert_eq!(11, high_level.raw_bytes(&djin_protocol::Settings::default()).unwrap().len());
 /// ```
 pub trait HighLevel : Clone + fmt::Debug {
     /// The lower-level representation of this type.
