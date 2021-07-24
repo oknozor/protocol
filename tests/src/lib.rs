@@ -1,12 +1,11 @@
 #![cfg(test)]
 
-extern crate protocol;
-#[macro_use] extern crate protocol_derive;
-
+extern crate djin_protocol;
+#[macro_use] extern crate djin_protocol_derive;
 macro_rules! verify_read_back {
     ($name:ident => $parcel:expr) => {
         pub mod $name {
-            use protocol::{self, Parcel, Settings};
+            use djin_protocol::{self, Parcel, Settings};
             use super::*;
 
             fn verify_read_back(settings: &Settings) {
@@ -16,12 +15,12 @@ macro_rules! verify_read_back {
 
             #[test]
             fn can_read_back_default_settings() {
-                verify_read_back(&protocol::Settings::default());
+                verify_read_back(&djin_protocol::Settings::default());
             }
 
             mod byte_order {
                 use super::*;
-                use protocol::{ByteOrder, Settings};
+                use djin_protocol::{ByteOrder, Settings};
 
                 #[test]
                 fn can_read_back_in_big_endian() {

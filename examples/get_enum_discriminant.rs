@@ -1,7 +1,7 @@
-extern crate protocol;
-#[macro_use] extern crate protocol_derive;
+extern crate djin_protocol;
+#[macro_use] extern crate djin_protocol_derive;
 
-use protocol::Enum;
+use djin_protocol::Enum;
 
 #[derive(Protocol, Clone, Debug, PartialEq)]
 pub struct Handshake;

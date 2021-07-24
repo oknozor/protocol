@@ -2,11 +2,10 @@
 //! The default middleware pipeline supports compression, but is disabled
 //! by default.
 
-extern crate protocol;
-#[macro_use] extern crate protocol_derive;
-
-use protocol::wire::middleware::{self, compression};
-use protocol::wire::stream;
+extern crate djin_protocol;
+#[macro_use] extern crate djin_protocol_derive;
+use djin_protocol::wire::middleware::{self, compression};
+use djin_protocol::wire::stream;
 
 pub const ALGORITHM: compression::Algorithm = compression::Algorithm::Zlib;
 
@@ -20,7 +19,7 @@ fn main() {
     use std::net::TcpStream;
 
     let stream = TcpStream::connect("127.0.0.1:34254").unwrap();
-    let mut connection = stream::Connection::new(stream, middleware::pipeline::default(), protocol::Settings::default());
+    let mut connection = stream::Connection::new(stream, middleware::pipeline::default(), djin_protocol::Settings::default());
 
     connection.middleware.compression = compression::Compression::Enabled(ALGORITHM);
 

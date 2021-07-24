@@ -1,8 +1,8 @@
 //! Tests the derived `Parcel` implementations and ensures
 //! various invariants are followed.
 
-use protocol::{Error, Parcel, Settings};
-use protocol::hint;
+use djin_protocol::{Error, Parcel, Settings};
+use djin_protocol::hint;
 use std::io;
 
 /// Wraps another Parcel and saves the hints at read time.
@@ -86,7 +86,7 @@ macro_rules! define_common_hint_invariant_tests {
         mod $parcel_description {
             use super::*;
             use crate::hints::*;
-            use protocol::hint;
+            use djin_protocol::hint;
 
             const PRETTY_LARGE_NUMBER: usize = 10_000;
 
@@ -105,7 +105,7 @@ macro_rules! define_common_hint_invariant_tests {
                 hints.current_field_index = Some(usize::max_value());
                 // Insert three bullshit field lengths.
                 hints.known_field_lengths = (0..PRETTY_LARGE_NUMBER).into_iter().map(|i| {
-                    (i, protocol::hint::FieldLength { length: i+i/2, kind: protocol::hint::LengthPrefixKind::Bytes })
+                    (i, djin_protocol::hint::FieldLength { length: i+i/2, kind: djin_protocol::hint::LengthPrefixKind::Bytes })
                 }).collect();
 
                 let hints_afterwards = get_hints_after_read::<$parcel_ty>(hints, $parcel_value);

@@ -1,6 +1,5 @@
-extern crate protocol;
-#[macro_use] extern crate protocol_derive;
-
+extern crate djin_protocol;
+#[macro_use] extern crate djin_protocol_derive;
 #[derive(Protocol, Clone, Debug, PartialEq)]
 pub struct Handshake;
 
@@ -22,8 +21,8 @@ fn main() {
     let socket = UdpSocket::bind("127.0.0.1:34254").unwrap();
     socket.connect("127.0.0.1:53111").unwrap();
 
-    let settings = protocol::Settings::default();
-    let mut pipeline = protocol::wire::dgram::Pipeline::new(protocol::wire::middleware::pipeline::default(), settings);
+    let settings = djin_protocol::Settings::default();
+    let mut pipeline = djin_protocol::wire::dgram::Pipeline::new(djin_protocol::wire::middleware::pipeline::default(), settings);
 
 
     // Send some data.

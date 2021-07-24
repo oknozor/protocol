@@ -1,4 +1,4 @@
-use protocol::Enum;
+use djin_protocol::Enum;
 
 #[derive(Protocol, Clone, Debug, PartialEq)]
 pub enum WithGenerics<A, B> {

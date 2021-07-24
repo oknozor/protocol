@@ -1,4 +1,4 @@
-use protocol::{Parcel, Settings};
+use djin_protocol::{Parcel, Settings};
 
 
 #[derive(Protocol, Debug, PartialEq, Eq)]

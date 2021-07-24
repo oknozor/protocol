@@ -51,7 +51,7 @@ fn build_generics(ast: &syn::DeriveInput) -> (Vec<proc_macro2::TokenStream>, Vec
 
     generics.extend(ast.generics.type_params().map(|t| {
         let (ident, bounds) = (&t.ident, &t.bounds);
-        where_predicates.push(quote!(#ident : protocol::Parcel + #bounds));
+        where_predicates.push(quote!(#ident : djin_protocol::Parcel + #bounds));
         quote!(#ident)
     }));
 
@@ -77,16 +77,16 @@ fn impl_parcel_for_struct(ast: &syn::DeriveInput,
     let write_fields = codegen::write_fields(&strukt.fields);
     let named_field_variables = codegen::named_fields_declarations(&strukt.fields);
 
-    impl_trait_for(ast, quote!(protocol::Parcel), quote! {
+    impl_trait_for(ast, quote!(djin_protocol::Parcel), quote! {
         const TYPE_NAME: &'static str = stringify!(#strukt_name);
 
         #[allow(unused_variables)]
         fn read_field(__io_reader: &mut io::Read,
-                      __settings: &protocol::Settings,
-                      _: &mut protocol::hint::Hints)
-            -> Result<Self, protocol::Error> {
+                      __settings: &djin_protocol::Settings,
+                      _: &mut djin_protocol::hint::Hints)
+            -> Result<Self, djin_protocol::Error> {
             // Each type gets its own hints.
-            let mut __hints = protocol::hint::Hints::default();
+            let mut __hints = djin_protocol::hint::Hints::default();
             __hints.begin_fields();
             #named_field_variables
             Ok(#strukt_name # read_fields)
@@ -94,11 +94,11 @@ fn impl_parcel_for_struct(ast: &syn::DeriveInput,
 
         #[allow(unused_variables)]
         fn write_field(&self, __io_writer: &mut io::Write,
-                       __settings: &protocol::Settings,
-                       _: &mut protocol::hint::Hints)
-            -> Result<(), protocol::Error> {
+                       __settings: &djin_protocol::Settings,
+                       _: &mut djin_protocol::hint::Hints)
+            -> Result<(), djin_protocol::Error> {
             // Each type gets its own hints.
-            let mut __hints = protocol::hint::Hints::default();
+            let mut __hints = djin_protocol::hint::Hints::default();
             __hints.begin_fields();
 
             #write_fields
@@ -116,16 +116,16 @@ fn impl_parcel_for_enum(plan: &plan::Enum,
     let read_variant = codegen::enums::read_variant(plan);
     let write_variant = codegen::enums::write_variant(plan);
 
-    impl_trait_for(ast, quote!(protocol::Parcel), quote! {
+    impl_trait_for(ast, quote!(djin_protocol::Parcel), quote! {
         const TYPE_NAME: &'static str = stringify!(#enum_name);
 
         #[allow(unused_variables)]
         fn read_field(__io_reader: &mut io::Read,
-                      __settings: &protocol::Settings,
-                      _: &mut protocol::hint::Hints)
-            -> Result<Self, protocol::Error> {
+                      __settings: &djin_protocol::Settings,
+                      _: &mut djin_protocol::hint::Hints)
+            -> Result<Self, djin_protocol::Error> {
             // Each type gets its own hints.
-            let mut __hints = protocol::hint::Hints::default();
+            let mut __hints = djin_protocol::hint::Hints::default();
             __hints.begin_fields();
 
             Ok(#read_variant)
@@ -133,11 +133,11 @@ fn impl_parcel_for_enum(plan: &plan::Enum,
 
         #[allow(unused_variables)]
         fn write_field(&self, __io_writer: &mut io::Write,
-                       __settings: &protocol::Settings,
-                       _: &mut protocol::hint::Hints)
-            -> Result<(), protocol::Error> {
+                       __settings: &djin_protocol::Settings,
+                       _: &mut djin_protocol::hint::Hints)
+            -> Result<(), djin_protocol::Error> {
             // Each type gets its own hints.
-            let mut __hints = protocol::hint::Hints::default();
+            let mut __hints = djin_protocol::hint::Hints::default();
             __hints.begin_fields();
 
             #write_variant
@@ -163,7 +163,7 @@ fn impl_enum_for_enum(plan: &plan::Enum,
         })
     });
 
-    impl_trait_for(ast, quote!(protocol::Enum), quote!(
+    impl_trait_for(ast, quote!(djin_protocol::Enum), quote!(
         type Discriminant = #discriminant;
 
         fn discriminator(&self) -> Self::Discriminant {
@@ -189,7 +189,7 @@ fn anonymous_constant_block(description: &str,
     quote! {
         #[allow(non_upper_case_globals)]
         const #anon_const_name: () = {
-            extern crate protocol;
+            extern crate djin_protocol;
             use std::io;
 
             #body

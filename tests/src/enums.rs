@@ -1,4 +1,4 @@
-use protocol::Parcel;
+use djin_protocol::Parcel;
 
 #[derive(Protocol, Clone, Debug, PartialEq)]
 pub enum WithGenerics<A, B> {
@@ -8,7 +8,7 @@ pub enum WithGenerics<A, B> {
 
 mod string_discriminants {
     #[allow(unused_imports)]
-    use protocol::{Parcel, Settings};
+    use djin_protocol::{Parcel, Settings};
 
     #[derive(Protocol, Clone, Debug, PartialEq)]
     #[protocol]
@@ -100,7 +100,7 @@ mod generics {
 
 mod integer_discriminants {
     #[allow(unused_imports)]
-    use protocol::{Parcel, Settings};
+    use djin_protocol::{Parcel, Settings};
 
     #[derive(Protocol, Debug, PartialEq, Eq)]
     #[protocol(discriminant = "integer")]
@@ -147,14 +147,14 @@ mod integer_discriminants {
     #[test]
     fn discriminator_zero_is_reserved() {
         assert_eq!(vec![1],
-                   WithoutExplicitDiscriminators::Only.raw_bytes(&protocol::Settings::default()).unwrap());
+                   WithoutExplicitDiscriminators::Only.raw_bytes(&djin_protocol::Settings::default()).unwrap());
     }
 
     #[test]
     fn named_fields_are_correctly_written() {
         assert_eq!(vec![0, 0, 0, 1, 1], BoatKind::Speedboat {
             warp_speed_enabled: true,
-        }.raw_bytes(&protocol::Settings::default()).unwrap());
+        }.raw_bytes(&djin_protocol::Settings::default()).unwrap());
     }
 
     #[test]

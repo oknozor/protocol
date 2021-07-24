@@ -1,6 +1,5 @@
-extern crate protocol;
-#[macro_use] extern crate protocol_derive;
-
+extern crate djin_protocol;
+#[macro_use] extern crate djin_protocol_derive;
 #[derive(Protocol, Clone, Debug, PartialEq)]
 pub struct Handshake;
 
@@ -38,11 +37,11 @@ fn main() {
     use std::net::TcpStream;
 
     let stream = TcpStream::connect("127.0.0.1:34254").unwrap();
-    let settings = protocol::Settings {
-        byte_order: protocol::ByteOrder::LittleEndian,
+    let settings = djin_protocol::Settings {
+        byte_order: djin_protocol::ByteOrder::LittleEndian,
         ..Default::default()
     };
-    let mut connection = protocol::wire::stream::Connection::new(stream, protocol::wire::middleware::pipeline::default(), settings);
+    let mut connection = djin_protocol::wire::stream::Connection::new(stream, djin_protocol::wire::middleware::pipeline::default(), settings);
 
     connection.send_packet(&Packet::Handshake(Handshake)).unwrap();
     connection.send_packet(&Packet::Hello(Hello { id: 0, data: vec![ 55 ]})).unwrap();

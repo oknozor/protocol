@@ -2,9 +2,8 @@
 //! This works because types and packets are the same thing.
 //! This means that we can simply have a packet with another packet field.
 
-extern crate protocol;
-#[macro_use] extern crate protocol_derive;
-
+extern crate djin_protocol;
+#[macro_use] extern crate djin_protocol_derive;
 #[derive(Protocol, Clone, Debug, PartialEq)]
 pub struct Handshake;
 
@@ -23,9 +22,9 @@ fn main() {
     use std::net::TcpStream;
 
     let stream = TcpStream::connect("127.0.0.1:34254").unwrap();
-    let mut connection = protocol::wire::stream::Connection::new(stream,
-                                   protocol::wire::middleware::pipeline::default(),
-                                   protocol::Settings::default());
+    let mut connection = djin_protocol::wire::stream::Connection::new(stream,
+                                   djin_protocol::wire::middleware::pipeline::default(),
+                                   djin_protocol::Settings::default());
 
     connection.send_packet(&Packet {
         headers: std::collections::HashMap::new(),

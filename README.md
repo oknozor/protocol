@@ -38,7 +38,7 @@ protocol-derive = "3.1"
 
 ## Under the hood
 
-The most interesting part here is the [`protocol::Parcel`](https://docs.rs/protocol/0.3.4/protocol/trait.Parcel.html) trait. Any type that implements this trait can then be serialized to and from a byte stream. All primitive types, standard collections, tuples, and arrays implement this trait.
+The most interesting part here is the [`djin_protocol::Parcel`](https://docs.rs/protocol/0.3.4/protocol/trait.Parcel.html) trait. Any type that implements this trait can then be serialized to and from a byte stream. All primitive types, standard collections, tuples, and arrays implement this trait.
 
 This crate becomes particularly useful when you define your own `Parcel` types. You can use `#[derive(Protocol)]` to do this. Note that in order for a type to implement `Parcel`, it must also implement `Clone`, `Debug`, and `PartialEq`.
 
@@ -61,8 +61,7 @@ Any user-defined type can have the `Parcel` trait automatically derived.
 ## Example
 
 ```rust
-#[macro_use] extern crate protocol_derive;
-#[macro_use] extern crate protocol;
+#[macro_use] extern crate djin_protocol_derive;#[macro_use] extern crate djin_protocol;
 
 #[derive(Protocol, Clone, Debug, PartialEq)]
 pub struct Handshake;
@@ -100,7 +99,7 @@ fn main() {
     use std::net::TcpStream;
 
     let stream = TcpStream::connect("127.0.0.1:34254").unwrap();
-    let mut connection = protocol::wire::stream::Connection::new(stream, protocol::wire::middleware::pipeline::default());
+    let mut connection = djin_protocol::wire::stream::Connection::new(stream, djin_protocol::wire::middleware::pipeline::default());
 
     connection.send_packet(&Packet::Handshake(Handshake)).unwrap();
     connection.send_packet(&Packet::Hello(Hello { id: 0, data: vec![ 55 ]})).unwrap();

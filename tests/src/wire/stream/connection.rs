@@ -1,6 +1,6 @@
-pub use protocol::{Parcel, Settings};
-use protocol::wire::stream::Connection;
-pub use protocol::wire::middleware;
+pub use djin_protocol::{Parcel, Settings};
+use djin_protocol::wire::stream::Connection;
+pub use djin_protocol::wire::middleware;
 
 pub use std::io::Cursor;
 
