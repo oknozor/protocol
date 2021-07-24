@@ -1,13 +1,13 @@
 [package]
-name = "protocol-derive"
+name = "djin-protocol-derive"
 version = "3.1.9"
-authors = ["Dylan McKay <me@dylanmckay.io>"]
+authors = ["Dylan McKay <me@dylanmckay.io>", "Paul Delafosse <paul.delafosse@protonmail.com>"]
 edition = "2018"
 
-description = "Easy protocol definitions"
+description = "A for of protocol, for aoe-djin"
 license = "MIT"
-repository = "https://github.com/dylanmckay/protocol"
-documentation = "https://docs.rs/protocol"
+repository = "https://github.com/oknozor/protocol"
+documentation = "https://docs.rs/djin-protocol"
 keywords = ["protocol", "tcp", "udp", "connection", "encoding"]
 
 [lib]

@@ -1,14 +1,14 @@
 [package]
-name = "protocol"
+name = "djin-protocol"
 version = "3.1.9"
-authors = ["Dylan McKay <me@dylanmckay.io>"]
+authors = ["Dylan McKay <me@dylanmckay.io>", "Paul Delafosse <paul.delafosse@protonmail.com>"]
 edition = "2018"
 
-description = "Easy protocol definitions"
+description = "A for of protocol, for aoe-djin"
 license = "MIT"
 readme = "../README.md"
-repository = "https://github.com/dylanmckay/protocol"
-documentation = "https://docs.rs/protocol"
+repository = "https://github.com/oknozor/protocol"
+documentation = "https://docs.rs/djin-protocol"
 keywords = ["protocol", "tcp", "udp", "connection", "encoding"]
 
 [features]
@@ -23,7 +23,7 @@ num-traits = "0.2"
 
 [dev-dependencies]
 # Used in examples
-protocol-derive = { path = "../protocol-derive", version = "3.1.9" }
+djin-protocol-derive = { path = "../protocol-derive", version = "3.1.9" }
 
 [[example]]
 name = "basic"

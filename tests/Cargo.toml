@@ -7,6 +7,6 @@ edition = "2018"
 publish = false
 
 [dependencies]
-protocol = { path = "../protocol" }
-protocol-derive = { path = "../protocol-derive" }
+djin-protocol = { path = "../protocol" }
+djin-protocol-derive = { path = "../protocol-derive" }
 

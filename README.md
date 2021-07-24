@@ -1,7 +1,9 @@
 # protocol
 
+**This is a fork of [protocol](https://github.com/dylanmckay/protocol) whith some additional features needed for some other projects**
+
 [![Build Status](https://travis-ci.org/dylanmckay/protocol.svg?branch=master)](https://travis-ci.org/dylanmckay/protocol)
-[![Crates.io](https://img.shields.io/crates/v/protocol.svg)](https://crates.io/crates/protocol)
+[![Crates.io](https://img.shields.io/crates/v/djin-protocol.svg)](https://crates.io/crates/djin-protocol)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
 [Documentation](https://docs.rs/protocol)
