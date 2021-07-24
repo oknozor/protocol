@@ -1,6 +1,6 @@
 [package]
 name = "djin-protocol-derive"
-version = "3.2.0"
+version = "3.3.1"
 authors = ["Dylan McKay <me@dylanmckay.io>", "Paul Delafosse <paul.delafosse@protonmail.com>"]
 edition = "2018"
 

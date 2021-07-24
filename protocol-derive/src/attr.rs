@@ -49,7 +49,7 @@ impl AttributeContainer {
     }
 
     pub fn set_length(&mut self, length: Protocol) {
-        debug_assert!(matches!(length, Protocol::LengthPrefix {..} | Protocol::FixedLength(_)));
+        debug_assert!(matches!(length, Protocol::LengthPrefix {..} | Protocol::FixedLength(_) | Protocol::FixedLengthPath(_) ));
         if let Some(l) = &self.length {
             match l {
                 Protocol::LengthPrefix { .. } => panic!("duplicate protocol attribute `{}`", LENGTH_PREFIX),
@@ -72,6 +72,7 @@ pub enum Protocol {
         prefix_subfield_names: Vec<syn::Ident>,
     },
     FixedLength(usize),
+    FixedLengthPath(syn::Path),
     SkipIf(SkipExpression),
 }
 
@@ -197,7 +198,7 @@ fn parse_discriminator_attr(attributes: &mut AttributeContainer, nested_list: &M
     attributes.set_dicriminator(Protocol::Discriminator(literal));
 }
 
-fn parse_length_prefix_attr(attributes: &mut AttributeContainer, nested_list: &MetaList) {
+fn  parse_length_prefix_attr(attributes: &mut AttributeContainer, nested_list: &MetaList) {
     let nested_list = expect::meta_list::nested_list(nested_list)
         .expect("expected a nested list");
     let prefix_kind = match &nested_list.path.get_ident().expect("nested list is not an ident").to_string()[..] {
@@ -235,13 +236,20 @@ fn parse_length_prefix_attr(attributes: &mut AttributeContainer, nested_list: &M
 }
 
 fn parse_fixed_length_attr(attributes: &mut AttributeContainer, nested_list: &MetaList) {
-    let nested_list = expect::meta_list::single_literal(nested_list)
-        .expect("expected a nested list");
+    let nested_list = expect::meta_list::single_element(&nested_list).unwrap();
+
 
     match nested_list {
-        syn::Lit::Int(len) => {
+        syn::NestedMeta::Lit(syn::Lit::Int(len))  => {
             let len = len.base10_parse::<usize>().expect("Invalid fixed length, expected usize");
             attributes.set_length(Protocol::FixedLength(len));
+        }
+        syn::NestedMeta::Lit(syn::Lit::Str(lit))  => {
+            let path: syn::Path = lit.parse().unwrap();
+            attributes.set_length(Protocol::FixedLengthPath(path));
+        }
+        syn::NestedMeta::Meta(syn::Meta::Path(path)) =>  {
+            attributes.set_length(Protocol::FixedLengthPath(path))
         }
         _ => panic!("Invalid fixed length, expected usize")
     }

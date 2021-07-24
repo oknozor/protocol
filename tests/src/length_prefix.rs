@@ -56,6 +56,21 @@ pub struct WithFixedLength {
     pub data: Vec<u32>,
 }
 
+const LENGTH: usize = 3;
+
+#[derive(Protocol, Debug, PartialEq, Eq)]
+pub struct FixedLengthWithPathStr {
+    #[protocol(fixed_length("LENGTH"))]
+    pub data: Vec<u32>,
+}
+
+#[derive(Protocol, Debug, PartialEq, Eq)]
+pub struct FixedLengthWithPath {
+    #[protocol(fixed_length(LENGTH))]
+    pub data: Vec<u32>,
+}
+
+
 #[derive(Protocol, Debug, PartialEq, Eq)]
 pub struct PointerLength {
     #[protocol(fixed_length(3))]
@@ -184,6 +199,21 @@ fn can_read_pointer_length_prefix_2() {
             0, 0, 0, 3, // element enabled 1
             0, 0, 0, 6  // element enabled 1
         ], &Settings::default()).unwrap());
+}
+
+#[test]
+fn read_fixed_length_with_path() {
+
+    assert_eq!(FixedLengthWithPath {
+        data: vec![1, 2, 3],
+    }, FixedLengthWithPath::from_raw_bytes(
+        &[
+            0, 0, 0, 1, // 1
+            0, 0, 0, 2, // 2
+            0, 0, 0, 3,  // 3
+            0, 0, 0, 3,  // 3
+        ],
+        &Settings::default()).unwrap());
 }
 
 

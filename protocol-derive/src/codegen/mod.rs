@@ -155,14 +155,22 @@ fn update_hint_fixed_length<'a>(field: &'a syn::Field,
                                 fields: impl IntoIterator<Item=&'a syn::Field> + Clone,
                                 attributes: &AttributeContainer)
                                 -> TokenStream {
-    if let Some(attr::Protocol::FixedLength(length)) = attributes.length {
-        let position = fields.clone().into_iter().position(|f| f == field).unwrap();
+    match &attributes.length {
+        Some(attr::Protocol::FixedLength(length)) => {
+            let position = fields.clone().into_iter().position(|f| f == field).unwrap();
 
-        quote! {
-            __hints.set_field_length(#position, #length, djin_protocol::hint::LengthPrefixKind::Elements);
+            quote! {
+                __hints.set_field_length(#position, #length, djin_protocol::hint::LengthPrefixKind::Elements);
+            }
         }
-    } else {
-        quote! { }
+        Some(attr::Protocol::FixedLengthPath(length)) => {
+            let position = fields.clone().into_iter().position(|f| f == field).unwrap();
+
+            quote! {
+                __hints.set_field_length(#position, #length, djin_protocol::hint::LengthPrefixKind::Elements);
+            }
+        }
+        _ => quote! { }
     }
 }
 
